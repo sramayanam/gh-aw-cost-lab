@@ -53,7 +53,7 @@ gh aw doctor --repo sramayanam/gh-aw-cost-lab
 
 6. Preview issue triage against an issue context. The `issue-triage` workflow is
    normally triggered when an issue is opened or reopened, so use trial mode for
-   a safe preview:
+   a safe preview. This authenticated example requires a real issue number:
 
    ```bash
    gh aw trial ./.github/workflows/issue-triage.md \
