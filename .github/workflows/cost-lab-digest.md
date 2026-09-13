@@ -12,7 +12,7 @@ permissions:
 
 engine:
   id: copilot
-  model: gpt-5-mini
+  model: gpt-5.4-mini
 
 timeout-minutes: 10
 max-turns: 8

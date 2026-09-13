@@ -3,7 +3,7 @@ description: Safely classify and label newly opened issues
 
 on:
   issues:
-    types: [opened]
+    types: [opened, reopened]
 
 permissions:
   contents: read
@@ -11,10 +11,10 @@ permissions:
 
 engine:
   id: copilot
-  model: gpt-5-mini
+  model: gpt-5.4-mini
 
 timeout-minutes: 5
-max-turns: 4
+max-turns: 8
 max-ai-credits: 50
 
 safe-outputs:
