@@ -58,7 +58,7 @@ gh aw doctor --repo sramayanam/gh-aw-cost-lab
    ```bash
    gh aw trial ./.github/workflows/issue-triage.md \
      --logical-repo sramayanam/gh-aw-cost-lab \
-     --trigger-context https://github.com/sramayanam/gh-aw-cost-lab/issues/4 \
+     --trigger-context https://github.com/sramayanam/gh-aw-cost-lab/issues/<issue-number> \
      --dry-run -y
    ```
 
