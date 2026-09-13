@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Local vs Commercial AI — CIO Briefing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c1524;
+    --surface: #142238;
+    --surface-2: #1a2b45;
+    --surface-3: #213652;
+    --border: rgba(231, 220, 192, 0.11);
+    --text: #f0eadc;
+    --muted: #aaa38f;
+    --gold: #d7af55;
+    --gold-dim: rgba(215, 175, 85, 0.12);
+    --teal: #58b7ad;
+    --teal-dim: rgba(88, 183, 173, 0.12);
+    --coral: #de7b62;
+    --coral-dim: rgba(222, 123, 98, 0.12);
+    --green: #78b77c;
+    --green-dim: rgba(120, 183, 124, 0.12);
+    --font-display: "Instrument Serif", Georgia, serif;
+    --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f5f0e5;
+      --surface: #fffdf7;
+      --surface-2: #eee7d8;
+      --surface-3: #e4dccb;
+      --border: rgba(24, 35, 51, 0.13);
+      --text: #182333;
+      --muted: #6e6a60;
+      --gold: #9a6b08;
+      --gold-dim: rgba(154, 107, 8, 0.09);
+      --teal: #147d75;
+      --teal-dim: rgba(20, 125, 117, 0.09);
+      --coral: #b84c35;
+      --coral-dim: rgba(184, 76, 53, 0.09);
+      --green: #3c7a43;
+      --green-dim: rgba(60, 122, 67, 0.09);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    color: var(--text);
+    background: var(--bg);
+    font-family: var(--font-display);
+    overflow: hidden;
+  }
+  .deck {
+    height: 100dvh;
+    overflow-y: auto;
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+  }
+  .slide {
+    height: 100dvh;
+    scroll-snap-align: start;
+    overflow: hidden;
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: clamp(34px, 6vh, 74px) clamp(38px, 7vw, 112px);
+    background:
+      linear-gradient(115deg, transparent 0 68%, var(--gold-dim) 100%),
+      radial-gradient(circle at 8% 10%, var(--teal-dim), transparent 34%),
+      var(--bg);
+    opacity: 0;
+    transform: translateY(28px) scale(0.99);
+    transition: opacity .55s ease, transform .55s ease;
+  }
+  .slide:nth-child(2n) {
+    background:
+      linear-gradient(245deg, transparent 0 72%, var(--teal-dim) 100%),
+      radial-gradient(circle at 88% 12%, var(--gold-dim), transparent 32%),
+      var(--bg);
+  }
+  .slide.visible { opacity: 1; transform: none; }
+  .reveal { opacity: 0; transform: translateY(18px); transition: .5s ease; }
+  .visible .reveal { opacity: 1; transform: none; }
+  .visible .reveal:nth-child(2) { transition-delay: .08s; }
+  .visible .reveal:nth-child(3) { transition-delay: .16s; }
+  .visible .reveal:nth-child(4) { transition-delay: .24s; }
+  .visible .reveal:nth-child(5) { transition-delay: .32s; }
+  h1, h2, h3, p { margin: 0; }
+  h1 {
+    max-width: 1050px;
+    font-size: clamp(58px, 8vw, 112px);
+    line-height: .92;
+    font-weight: 400;
+    letter-spacing: -2px;
+  }
+  h2 {
+    font-size: clamp(38px, 5.2vw, 68px);
+    line-height: 1;
+    font-weight: 400;
+    letter-spacing: -1px;
+  }
+  h3 { font-size: clamp(22px, 2.5vw, 34px); font-weight: 400; }
+  .eyebrow, .mono {
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: .13em;
+    font-size: clamp(10px, 1.1vw, 14px);
+  }
+  .eyebrow { color: var(--gold); margin-bottom: 18px; }
+  .lead {
+    color: var(--muted);
+    font-size: clamp(21px, 2.5vw, 31px);
+    line-height: 1.35;
+    max-width: 880px;
+  }
+  .gold { color: var(--gold); }
+  .teal { color: var(--teal); }
+  .coral { color: var(--coral); }
+  .muted { color: var(--muted); }
+  .rule { width: 120px; height: 2px; background: var(--gold); margin: 28px 0; }
+  .grid-2, .grid-3, .grid-4 {
+    display: grid;
+    gap: clamp(14px, 2vw, 26px);
+    width: 100%;
+    min-width: 0;
+  }
+  .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .card {
+    min-width: 0;
+    padding: clamp(18px, 2.4vw, 32px);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 14px;
+    overflow-wrap: break-word;
+  }
+  .card.hero {
+    background: color-mix(in srgb, var(--surface) 88%, var(--gold) 12%);
+    border-color: color-mix(in srgb, var(--border) 35%, var(--gold) 65%);
+  }
+  .card.teal-card { border-top: 3px solid var(--teal); }
+  .card.gold-card { border-top: 3px solid var(--gold); }
+  .card.coral-card { border-top: 3px solid var(--coral); }
+  .card.green-card { border-top: 3px solid var(--green); }
+  .kpi {
+    font-family: var(--font-mono);
+    font-size: clamp(38px, 5.8vw, 78px);
+    line-height: 1;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .kpi-label {
+    color: var(--muted);
+    font-size: clamp(16px, 1.8vw, 23px);
+    line-height: 1.3;
+    margin-top: 12px;
+  }
+  .small {
+    color: var(--muted);
+    font-size: clamp(14px, 1.45vw, 19px);
+    line-height: 1.45;
+  }
+  .split {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr);
+    gap: clamp(28px, 5vw, 80px);
+    align-items: center;
+    width: 100%;
+  }
+  .bars { display: grid; gap: 22px; }
+  .bar-row {
+    display: grid;
+    grid-template-columns: 108px 1fr 80px;
+    gap: 14px;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: clamp(12px, 1.2vw, 16px);
+  }
+  .bar-track {
+    height: 20px;
+    border-radius: 4px;
+    background: var(--surface-3);
+    overflow: hidden;
+  }
+  .bar-fill { height: 100%; border-radius: inherit; }
+  .bar-qwen { background: var(--teal); }
+  .bar-azure { background: var(--gold); }
+  .callout {
+    border-left: 4px solid var(--coral);
+    padding: 18px 22px;
+    background: var(--coral-dim);
+    font-size: clamp(18px, 2.1vw, 27px);
+    line-height: 1.35;
+  }
+  .flow {
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+    margin-top: 34px;
+  }
+  .flow-step {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 22px;
+    border-radius: 12px;
+  }
+  .flow-arrow {
+    align-self: center;
+    color: var(--gold);
+    font-family: var(--font-mono);
+    font-size: 28px;
+  }
+  .decision {
+    display: grid;
+    grid-template-columns: 1fr 120px 1fr;
+    align-items: center;
+    gap: 24px;
+  }
+  .decision-center {
+    height: 120px;
+    width: 120px;
+    display: grid;
+    place-items: center;
+    border: 2px solid var(--gold);
+    transform: rotate(45deg);
+    background: var(--gold-dim);
+  }
+  .decision-center span {
+    transform: rotate(-45deg);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    text-align: center;
+  }
+  .list { list-style: none; padding: 0; display: grid; gap: 13px; }
+  .list li {
+    position: relative;
+    padding-left: 22px;
+    color: var(--muted);
+    font-size: clamp(16px, 1.7vw, 22px);
+    line-height: 1.35;
+  }
+  .list li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: .58em;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--gold);
+  }
+  .stamp {
+    position: absolute;
+    right: 7vw;
+    top: 8vh;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+  .source {
+    position: absolute;
+    left: 7vw;
+    bottom: 22px;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 10px;
+  }
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 8px 13px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--surface);
+  }
+  .tag::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+  }
+  .big-quote {
+    font-size: clamp(34px, 5vw, 66px);
+    line-height: 1.08;
+    max-width: 1080px;
+  }
+  .footnote {
+    margin-top: 20px;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: clamp(10px, 1vw, 13px);
+    line-height: 1.5;
+  }
+  .deck-progress {
+    position: fixed; inset: 0 auto auto 0; height: 3px;
+    background: var(--gold); z-index: 100; transition: width .25s ease;
+  }
+  .deck-dots {
+    position: fixed; right: 18px; top: 50%; transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: 8px; z-index: 100;
+    padding: 9px; border-radius: 18px;
+    background: color-mix(in srgb, var(--bg) 70%, transparent);
+    backdrop-filter: blur(6px);
+  }
+  .deck-dot {
+    width: 8px; height: 8px; border: 0; padding: 0; border-radius: 50%;
+    background: var(--muted); opacity: .32; cursor: pointer;
+  }
+  .deck-dot.active { opacity: 1; transform: scale(1.45); background: var(--gold); }
+  .deck-counter {
+    position: fixed; right: 22px; bottom: 17px; z-index: 100;
+    color: var(--muted); font: 11px var(--font-mono);
+  }
+  .deck-hints {
+    position: fixed; left: 50%; bottom: 17px; transform: translateX(-50%);
+    z-index: 100; color: var(--muted); font: 10px var(--font-mono);
+    transition: opacity .4s ease;
+  }
+  .deck-hints.faded { opacity: 0; }
+  .ring {
+    width: min(38vw, 410px);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: conic-gradient(var(--gold) 0 18.1%, var(--teal) 18.1% 100%);
+    position: relative;
+  }
+  .ring::after {
+    content: "";
+    position: absolute;
+    inset: 17%;
+    border-radius: 50%;
+    background: var(--bg);
+  }
+  .ring-content { position: relative; z-index: 1; text-align: center; }
+  .ring-content strong { display: block; font: 600 clamp(42px, 6vw, 72px) var(--font-mono); }
+  .ring-content span { color: var(--muted); font-size: 19px; }
+  table { border-collapse: collapse; width: 100%; margin-top: 28px; }
+  th, td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    font-size: clamp(13px, 1.35vw, 18px);
+  }
+  th { color: var(--gold); font: 600 12px var(--font-mono); text-transform: uppercase; letter-spacing: .08em; }
+  td:first-child { color: var(--text); }
+  td:not(:first-child) { color: var(--muted); }
+  .check { color: var(--green); font-family: var(--font-mono); }
+  .warn { color: var(--coral); font-family: var(--font-mono); }
+  @media (max-width: 800px) {
+    .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .split { grid-template-columns: 1fr; gap: 20px; }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .decision { grid-template-columns: 1fr; }
+    .decision-center { display: none; }
+    .flow { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+    .slide { padding: 42px 34px; }
+    .split .lead { font-size: 19px; }
+    .split .kpi { font-size: 42px; }
+    .split .kpi-label { font-size: 15px; }
+    .split .card { padding: 16px; }
+  }
+  @media (max-height: 700px) {
+    .slide { padding-top: 18px; padding-bottom: 18px; }
+    h1 { font-size: clamp(48px, 7vw, 86px); }
+    h2 { font-size: clamp(28px, 4vw, 44px); }
+    h3 { font-size: clamp(18px, 2vw, 26px); }
+    .lead { font-size: clamp(17px, 1.8vw, 22px); }
+    .card { padding: 12px 16px; }
+    .kpi { font-size: clamp(34px, 5vw, 60px); }
+    .kpi-label, .small { font-size: clamp(12px, 1.2vw, 16px); }
+    .grid-3, .grid-4 { gap: 14px; }
+    .flow { margin-top: 18px; }
+    .flow-step { padding: 14px; }
+    .big-quote { font-size: clamp(25px, 3.2vw, 40px); margin-top: 18px !important; }
+    table { margin-top: 16px; }
+    th, td { padding: 7px 10px; font-size: clamp(11px, 1.1vw, 15px); }
+    .callout { padding: 12px 16px; font-size: clamp(15px, 1.6vw, 20px); }
+    .rule { margin: 16px 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .slide, .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+  }
+  @media print {
+    body { overflow: visible; }
+    .deck { height: auto; overflow: visible; }
+    .slide { page-break-after: always; opacity: 1; transform: none; }
+    .deck-progress, .deck-dots, .deck-counter, .deck-hints { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="deck-progress" id="progress"></div>
+<nav class="deck-dots" id="dots" aria-label="Slide navigation"></nav>
+<div class="deck-counter" id="counter"></div>
+<div class="deck-hints" id="hints">← → navigate · Home / End</div>
+
+<main class="deck" id="deck">
+  <section class="slide">
+    <div class="stamp">CIO briefing · 16 September 2026</div>
+    <div class="eyebrow reveal">AI inference strategy</div>
+    <h1 class="reveal">Local vs.<br><span class="gold">commercial AI</span></h1>
+    <div class="rule reveal"></div>
+    <p class="lead reveal">The question is not which model wins. It is which workload belongs where.</p>
+    <div style="margin-top:34px" class="reveal"><span class="tag">Measured on live endpoints</span></div>
+    <div class="source">Qwen 3.5 4B on Foundry Local · Azure OpenAI GPT-4.1-mini</div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow reveal">Executive answer</div>
+    <div class="split">
+      <div>
+        <h2 class="reveal">Adopt a <span class="gold">hybrid routing</span> strategy.</h2>
+        <p class="lead reveal" style="margin-top:24px">Local inference wins the first-token race. Commercial inference wins completed-answer efficiency and reliability.</p>
+      </div>
+      <div class="grid-2 reveal">
+        <div class="card teal-card">
+          <div class="kpi teal">178<span style="font-size:.42em"> ms</span></div>
+          <div class="kpi-label">Local time to first token</div>
+        </div>
+        <div class="card gold-card">
+          <div class="kpi gold">5.5×</div>
+          <div class="kpi-label">More total tokens locally</div>
+        </div>
+        <div class="card coral-card">
+          <div class="kpi coral">3/5</div>
+          <div class="kpi-label">Local responses truncated</div>
+        </div>
+        <div class="card green-card">
+          <div class="kpi" style="color:var(--green)">4.9</div>
+          <div class="kpi-label">Azure quality score / 5</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="stamp">Controlled baseline</div>
+    <div class="eyebrow reveal">How we tested</div>
+    <h2 class="reveal">Same work. Same controls.</h2>
+    <div class="flow reveal">
+      <div class="flow-step">
+        <div class="mono teal">01 · Prompt</div>
+        <h3 style="margin-top:10px">Five task types</h3>
+        <p class="small" style="margin-top:8px">Arithmetic, constraints, extraction, code reasoning, factual explanation.</p>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="mono gold">02 · Sampling</div>
+        <h3 style="margin-top:10px">Matched</h3>
+        <p class="small" style="margin-top:8px">Temperature 0. Max 1,000 tokens. No client stop sequences. Identical prompts.</p>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="mono coral">03 · Judge</div>
+        <h3 style="margin-top:10px">Blind scoring</h3>
+        <p class="small" style="margin-top:8px">GPT-4.1-mini scored correctness, relevance, and completeness from 1–5.</p>
+      </div>
+    </div>
+    <p class="footnote reveal">Single five-case run. Directional evidence, not a production capacity forecast.</p>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow reveal">The efficiency gap</div>
+    <div class="split">
+      <div>
+        <h2 class="reveal">Tokenizers do not explain it.</h2>
+        <p class="lead reveal" style="margin-top:22px">The gap persists in provider tokens, words, and characters.</p>
+        <div class="callout reveal" style="margin-top:30px">
+          Qwen produced <strong>5.7× more words</strong> and <strong>6.8× more characters</strong>.
+        </div>
+      </div>
+      <div class="bars reveal">
+        <div class="bar-row"><span>Tokens</span><div class="bar-track"><div class="bar-fill bar-qwen" style="width:100%"></div></div><strong>5.5×</strong></div>
+        <div class="bar-row"><span>Words</span><div class="bar-track"><div class="bar-fill bar-qwen" style="width:100%"></div></div><strong>5.7×</strong></div>
+        <div class="bar-row"><span>Characters</span><div class="bar-track"><div class="bar-fill bar-qwen" style="width:100%"></div></div><strong>6.8×</strong></div>
+        <div style="height:1px;background:var(--border);margin:6px 0"></div>
+        <div class="bar-row"><span>Azure</span><div class="bar-track"><div class="bar-fill bar-azure" style="width:18.1%"></div></div><strong>1.0×</strong></div>
+      </div>
+    </div>
+    <div class="source">Baseline totals · Qwen 4,498 tokens / 2,389 words / 15,058 chars · Azure 812 / 421 / 2,219</div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow reveal">The critical caveat</div>
+    <div class="split">
+      <div class="ring reveal">
+        <div class="ring-content">
+          <strong>3 / 5</strong>
+          <span>Qwen outputs clipped</span>
+        </div>
+      </div>
+      <div>
+        <h2 class="reveal">5.5× is a floor.</h2>
+        <p class="lead reveal" style="margin-top:22px">Three local responses ended with <span class="coral">finish_reason = length</span>. Azure ended naturally on all five.</p>
+        <ul class="list reveal" style="margin-top:28px">
+          <li>True local verbosity is higher than observed.</li>
+          <li>Truncation independently depresses quality.</li>
+          <li>Capacity planning must use completed answers—not raw token throughput.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="stamp">Quality is separate from efficiency</div>
+    <div class="eyebrow reveal">What users receive</div>
+    <h2 class="reveal">A modest quality gap.<br>A large efficiency gap.</h2>
+    <div class="grid-3 reveal" style="margin-top:34px">
+      <div class="card teal-card">
+        <div class="kpi teal">4.1</div>
+        <div class="kpi-label">Qwen raw quality / 5</div>
+      </div>
+      <div class="card gold-card hero">
+        <div class="kpi gold">4.9</div>
+        <div class="kpi-label">Azure raw quality / 5</div>
+      </div>
+      <div class="card coral-card">
+        <div class="kpi coral">9.8×</div>
+        <div class="kpi-label">Azure quality per 1K tokens</div>
+      </div>
+    </div>
+    <p class="callout reveal" style="margin-top:28px">Present raw quality and quality-per-token together. The 9.8× figure is primarily the verbosity gap expressed through a quality-weighted metric.</p>
+    <p class="footnote">Judge limitation: GPT-4.1-mini evaluated blinded candidates; residual model-family bias remains possible.</p>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow reveal">Tuning result</div>
+    <div class="split">
+      <div>
+        <h2 class="reveal">Cheap controls helped selectively—not systemically.</h2>
+        <ul class="list reveal" style="margin-top:28px">
+          <li>Shared hard-format instructions and one-shot example.</li>
+          <li>Matched <code class="mono">&lt;/final&gt;</code> stop sequence.</li>
+          <li>Qwen no-thinking controls tested at template and prompt levels.</li>
+        </ul>
+      </div>
+      <div class="card hero reveal">
+        <div class="mono coral">Outcome</div>
+        <div class="kpi" style="margin-top:16px">3 / 5</div>
+        <div class="kpi-label">Qwen cases still reached 1,000 tokens with matched stops</div>
+        <div class="rule"></div>
+        <p class="small">Structured extraction and code reasoning improved. The broader termination issue remained.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow reveal">Capacity economics</div>
+    <h2 class="reveal">Tokens per second ≠ useful work per second.</h2>
+    <div class="flow reveal">
+      <div class="flow-step">
+        <div class="mono teal">Raw capacity</div>
+        <div class="kpi teal" style="font-size:42px;margin-top:14px">89 tok/s</div>
+        <p class="small" style="margin-top:8px">Local decode rate</p>
+      </div>
+      <div class="flow-arrow">×</div>
+      <div class="flow-step">
+        <div class="mono coral">Verbosity tax</div>
+        <div class="kpi coral" style="font-size:42px;margin-top:14px">6.6×</div>
+        <p class="small" style="margin-top:8px">More output tokens</p>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="mono gold">Effective capacity</div>
+        <div class="kpi gold" style="font-size:42px;margin-top:14px">↓</div>
+        <p class="small" style="margin-top:8px">Fewer completed answers per GPU-hour</p>
+      </div>
+    </div>
+    <p class="big-quote reveal" style="margin-top:34px">“Optimize for completed, acceptable answers—not generated tokens.”</p>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow reveal">Workload placement</div>
+    <h2 class="reveal">Route by business requirement.</h2>
+    <table class="reveal">
+      <thead>
+        <tr><th>Decision factor</th><th>Local model</th><th>Commercial endpoint</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>First-token responsiveness</td><td class="check">Best fit</td><td>Higher startup latency</td></tr>
+        <tr><td>Data locality / offline operation</td><td class="check">Best fit</td><td>Requires approved cloud path</td></tr>
+        <tr><td>Concise instruction following</td><td class="warn">Needs tuning</td><td class="check">Best fit</td></tr>
+        <tr><td>Elastic demand</td><td>Capacity must be owned</td><td class="check">Best fit</td></tr>
+        <tr><td>Predictable narrow tasks</td><td class="check">Strong candidate</td><td>May be unnecessary</td></tr>
+        <tr><td>High-stakes / complex reasoning</td><td class="warn">Gate carefully</td><td class="check">Preferred today</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="slide">
+    <div class="eyebrow reveal">Recommended architecture</div>
+    <h2 class="reveal">Local-first where it earns the right.</h2>
+    <div class="decision reveal" style="margin-top:38px">
+      <div class="card teal-card">
+        <div class="mono teal">Route local</div>
+        <h3 style="margin:12px 0">Private · repetitive · bounded</h3>
+        <p class="small">Classification, extraction with validated schemas, offline workflows, and interactive tasks where TTFT matters.</p>
+      </div>
+      <div class="decision-center"><span>Policy<br>router</span></div>
+      <div class="card gold-card hero">
+        <div class="mono gold">Route commercial</div>
+        <h3 style="margin:12px 0">Complex · concise · elastic</h3>
+        <p class="small">High-value reasoning, executive content, variable workloads, and requests where completion reliability dominates.</p>
+      </div>
+    </div>
+    <p class="callout reveal" style="margin-top:32px">Escalate automatically when the local response hits a token ceiling, fails schema validation, or falls below a quality threshold.</p>
+  </section>
+
+  <section class="slide">
+    <div class="stamp">Decision requested</div>
+    <div class="eyebrow reveal">Next 30 days</div>
+    <h2 class="reveal">Approve a measured hybrid pilot.</h2>
+    <div class="grid-3 reveal" style="margin-top:36px">
+      <div class="card teal-card">
+        <div class="mono teal">01 · Benchmark</div>
+        <h3 style="margin:12px 0">Use real workloads</h3>
+        <p class="small">Expand from 5 synthetic cases to 100 representative, risk-tiered requests.</p>
+      </div>
+      <div class="card gold-card">
+        <div class="mono gold">02 · Economics</div>
+        <h3 style="margin:12px 0">Add actual rates</h3>
+        <p class="small">Model GPU utilization, idle cost, token prices, retries, and escalation cost.</p>
+      </div>
+      <div class="card green-card">
+        <div class="mono" style="color:var(--green)">03 · Govern</div>
+        <h3 style="margin:12px 0">Set routing gates</h3>
+        <p class="small">Define privacy, quality, latency, and cost thresholds with human-reviewed exceptions.</p>
+      </div>
+    </div>
+    <p class="big-quote reveal" style="margin-top:40px">Decision: fund the router and measurement layer—not a single-provider bet.</p>
+    <p class="footnote">Cost rates were not configured in this experiment; no dollar-savings claim is included.</p>
+  </section>
+</main>
+
+<script>
+  const deck = document.getElementById("deck");
+  const slides = [...document.querySelectorAll(".slide")];
+  const dots = document.getElementById("dots");
+  const progress = document.getElementById("progress");
+  const counter = document.getElementById("counter");
+  const hints = document.getElementById("hints");
+  let current = 0;
+
+  slides.forEach((slide, index) => {
+    const dot = document.createElement("button");
+    dot.className = "deck-dot";
+    dot.setAttribute("aria-label", `Go to slide ${index + 1}`);
+    dot.addEventListener("click", event => {
+      event.stopPropagation();
+      slides[index].scrollIntoView({ behavior: "smooth" });
+    });
+    dots.appendChild(dot);
+  });
+
+  function update(index) {
+    current = index;
+    slides.forEach((slide, i) => slide.classList.toggle("visible", i === index));
+    [...dots.children].forEach((dot, i) => dot.classList.toggle("active", i === index));
+    progress.style.width = `${((index + 1) / slides.length) * 100}%`;
+    counter.textContent = `${String(index + 1).padStart(2, "0")} / ${String(slides.length).padStart(2, "0")}`;
+  }
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && entry.intersectionRatio > 0.55) {
+        update(slides.indexOf(entry.target));
+      }
+    });
+  }, { root: deck, threshold: [0.55] });
+  slides.forEach(slide => observer.observe(slide));
+
+  function go(delta) {
+    const target = Math.max(0, Math.min(slides.length - 1, current + delta));
+    slides[target].scrollIntoView({ behavior: "smooth" });
+  }
+  document.addEventListener("keydown", event => {
+    if (["ArrowRight", "ArrowDown", "PageDown", " "].includes(event.key)) {
+      event.preventDefault(); go(1);
+    } else if (["ArrowLeft", "ArrowUp", "PageUp"].includes(event.key)) {
+      event.preventDefault(); go(-1);
+    } else if (event.key === "Home") {
+      event.preventDefault(); slides[0].scrollIntoView({ behavior: "smooth" });
+    } else if (event.key === "End") {
+      event.preventDefault(); slides.at(-1).scrollIntoView({ behavior: "smooth" });
+    }
+  });
+  let touchY = 0;
+  deck.addEventListener("touchstart", event => { touchY = event.touches[0].clientY; }, { passive: true });
+  deck.addEventListener("touchend", event => {
+    const delta = touchY - event.changedTouches[0].clientY;
+    if (Math.abs(delta) > 50) go(delta > 0 ? 1 : -1);
+  }, { passive: true });
+  setTimeout(() => hints.classList.add("faded"), 5000);
+  const requestedSlide = Number(new URLSearchParams(location.search).get("slide"));
+  const initialSlide = Number.isInteger(requestedSlide) && requestedSlide > 0 &&
+    requestedSlide <= slides.length ? requestedSlide - 1 : 0;
+  update(initialSlide);
+  requestAnimationFrame(() => slides[initialSlide].scrollIntoView());
+</script>
+</body>
+</html>
