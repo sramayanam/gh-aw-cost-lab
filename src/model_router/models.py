@@ -13,12 +13,14 @@ class ResponsesRequest(BaseModel):
     instructions: str | None = None
     max_output_tokens: int | None = Field(default=None, gt=0)
     temperature: float | None = None
+    chat_template_kwargs: dict[str, Any] | None = None
 
 
 class ProviderUsage(BaseModel):
     input_tokens: int = Field(ge=0)
     output_tokens: int = Field(ge=0)
     total_tokens: int = Field(ge=0)
+    reasoning_tokens: int | None = Field(default=None, ge=0)
     source: Literal["provider"] = "provider"
 
 
@@ -32,12 +34,14 @@ class ProviderResult(BaseModel):
     time_to_first_token_ms: float | None = Field(default=None, ge=0)
     decode_time_ms: float | None = Field(default=None, ge=0)
     finish_reason: str | None = None
+    content_chunk_count: int = Field(default=0, ge=0)
 
 
 class CandidateMetrics(BaseModel):
     input_tokens: int | None
     output_tokens: int | None
     total_tokens: int | None
+    reasoning_tokens: int | None
     latency_ms: float
     time_to_first_token_ms: float | None
     decode_time_ms: float | None
@@ -52,11 +56,14 @@ class CandidateMetrics(BaseModel):
 
 class ComparisonRequest(BaseModel):
     prompt: str = Field(min_length=1)
+    instructions: str | None = None
     evaluation_criteria: str | None = None
     qwen_model: str | None = None
     azure_model: str | None = None
     max_output_tokens: int = Field(default=256, gt=0, le=4096)
     temperature: float = Field(default=0, ge=0, le=2)
+    qwen_chat_template_kwargs: dict[str, Any] | None = None
+    qwen_prompt_prefix: str | None = None
 
     @property
     def prompt_hash(self) -> str:

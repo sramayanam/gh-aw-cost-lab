@@ -14,6 +14,7 @@ def result() -> ProviderResult:
         latency_ms=2000,
         time_to_first_token_ms=500,
         decode_time_ms=1000,
+        content_chunk_count=2,
     )
 
 

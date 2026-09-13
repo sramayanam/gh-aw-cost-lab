@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
+import argparse
 import asyncio
 import json
 from collections.abc import Iterable
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, TypedDict
 
 import httpx
 
@@ -66,7 +67,67 @@ CASES = [
 ]
 
 
-async def run() -> None:
+class BenchmarkProfile(TypedDict):
+    description: str
+    max_output_tokens: int
+    temperature: float
+    instructions: str | None
+    qwen_chat_template_kwargs: dict[str, Any] | None
+    qwen_prompt_prefix: str | None
+
+
+PROFILES: dict[str, BenchmarkProfile] = {
+    "baseline": {
+        "description": (
+            "Identical zero-shot prompts and sampling settings for both providers."
+        ),
+        "max_output_tokens": 1000,
+        "temperature": 0,
+        "instructions": None,
+        "qwen_chat_template_kwargs": None,
+        "qwen_prompt_prefix": None,
+    },
+    "matched-concise": {
+        "description": (
+            "Identical concise system instruction, example, prompts, and sampling "
+            "settings for both providers."
+        ),
+        "max_output_tokens": 256,
+        "temperature": 0,
+        "instructions": (
+            "/no_think\n"
+            "Return only the final answer; do not expose analysis or chain of "
+            "thought. Follow every requested format and length constraint. Be "
+            "concise and use no more than 80 output tokens unless the request "
+            "requires more.\n"
+            "Example request: What is 2 + 2? Return only the result.\n"
+            "Example response: 4"
+        ),
+        "qwen_chat_template_kwargs": None,
+        "qwen_prompt_prefix": None,
+    },
+    "qwen-no-thinking": {
+        "description": (
+            "Provider-optimized experiment; adds Qwen-only no-thinking controls, "
+            "so prompts are intentionally not identical."
+        ),
+        "max_output_tokens": 256,
+        "temperature": 0,
+        "instructions": (
+            "Return only the final answer; do not expose analysis or chain of "
+            "thought. Follow every requested format and length constraint. Be "
+            "concise and use no more than 80 output tokens unless the request "
+            "requires more.\n"
+            "Example request: What is 2 + 2? Return only the result.\n"
+            "Example response: 4"
+        ),
+        "qwen_chat_template_kwargs": {"enable_thinking": False},
+        "qwen_prompt_prefix": "/no_think\n",
+    },
+}
+
+
+async def run(profile_name: str) -> None:
     settings = Settings()
     if settings.azure_openai_judge_deployment is None:
         raise RuntimeError(
@@ -88,6 +149,7 @@ async def run() -> None:
             azure=azure,
             judge=judge,
         )
+        profile = PROFILES[profile_name]
         try:
             results = []
             for case in CASES:
@@ -96,8 +158,14 @@ async def run() -> None:
                     await service.compare(
                         ComparisonRequest(
                             prompt=case["prompt"],
+                            instructions=profile["instructions"],
                             evaluation_criteria=case["criteria"],
-                            max_output_tokens=1000,
+                            max_output_tokens=profile["max_output_tokens"],
+                            temperature=profile["temperature"],
+                            qwen_chat_template_kwargs=profile[
+                                "qwen_chat_template_kwargs"
+                            ],
+                            qwen_prompt_prefix=profile["qwen_prompt_prefix"],
                         )
                     )
                 )
@@ -105,15 +173,21 @@ async def run() -> None:
             await qwen.aclose()
             await azure.aclose()
 
-    report = _report(results)
-    destination = settings.router_data_dir / "latest-benchmark.json"
+    report = _report(results, profile_name, profile)
+    destination = settings.router_data_dir / f"benchmark-{profile_name}.json"
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    latest = settings.router_data_dir / "latest-benchmark.json"
+    latest.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     _print_summary(report)
     print(f"\nMetric-only report: {destination}")
 
 
-def _report(results: list[ComparisonResult]) -> dict[str, Any]:
+def _report(
+    results: list[ComparisonResult],
+    profile_name: str,
+    profile: BenchmarkProfile,
+) -> dict[str, Any]:
     rows = []
     for case, result in zip(CASES, results, strict=True):
         row: dict[str, Any] = {"case": case["id"], "prompt_hash": result.prompt_hash}
@@ -145,6 +219,17 @@ def _report(results: list[ComparisonResult]) -> dict[str, Any]:
     return {
         "schema_version": 1,
         "created_at": datetime.now(UTC).isoformat(),
+        "profile": profile_name,
+        "profile_description": profile["description"],
+        "sampling": {
+            "max_output_tokens": profile["max_output_tokens"],
+            "temperature": profile["temperature"],
+            "stop_sequences": [],
+            "shared_instructions": profile["instructions"] is not None,
+            "qwen_chat_template_kwargs": profile["qwen_chat_template_kwargs"],
+            "prompts_identical": profile["qwen_prompt_prefix"] is None,
+            "qwen_prompt_prefix": profile["qwen_prompt_prefix"],
+        },
         "aggregate": _aggregate(results),
         "cases": rows,
     }
@@ -258,4 +343,11 @@ def _number(value: float | int | None) -> str:
 
 
 if __name__ == "__main__":
-    asyncio.run(run())
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--profile",
+        choices=sorted(PROFILES),
+        default="baseline",
+    )
+    arguments = parser.parse_args()
+    asyncio.run(run(arguments.profile))

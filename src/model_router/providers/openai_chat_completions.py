@@ -43,6 +43,7 @@ class OpenAIChatCompletionsProvider:
         started = perf_counter()
         first_token_at: float | None = None
         chunks: list[str] = []
+        content_chunk_count = 0
         usage: ProviderUsage | None = None
         response_id: str | None = None
         finish_reason: str | None = None
@@ -77,6 +78,7 @@ class OpenAIChatCompletionsProvider:
                         if first_token_at is None:
                             first_token_at = perf_counter()
                         chunks.append(delta)
+                        content_chunk_count += 1
         except httpx.HTTPError as exc:
             raise ProviderError(self.name, f"{self.name} request failed") from exc
         finished = perf_counter()
@@ -106,6 +108,7 @@ class OpenAIChatCompletionsProvider:
                 else None
             ),
             finish_reason=finish_reason,
+            content_chunk_count=content_chunk_count,
         )
 
     async def list_models(self) -> list[str]:
@@ -184,6 +187,8 @@ def _chat_payload(
         payload["max_tokens"] = request.max_output_tokens
     if request.temperature is not None:
         payload["temperature"] = request.temperature
+    if request.chat_template_kwargs is not None:
+        payload["chat_template_kwargs"] = request.chat_template_kwargs
     return payload
 
 
@@ -235,10 +240,19 @@ def _extract_usage(body: dict[str, Any]) -> ProviderUsage | None:
         return None
     if not isinstance(total_tokens, int):
         total_tokens = input_tokens + output_tokens
+    completion_details = usage.get("completion_tokens_details")
+    reasoning_tokens = (
+        completion_details.get("reasoning_tokens")
+        if isinstance(completion_details, dict)
+        else None
+    )
     return ProviderUsage(
         input_tokens=input_tokens,
         output_tokens=output_tokens,
         total_tokens=total_tokens,
+        reasoning_tokens=(
+            reasoning_tokens if isinstance(reasoning_tokens, int) else None
+        ),
     )
 
 

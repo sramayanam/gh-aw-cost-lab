@@ -14,6 +14,7 @@ def candidate_metrics(
     input_tokens = usage.input_tokens if usage else None
     output_tokens = usage.output_tokens if usage else None
     total_tokens = usage.total_tokens if usage else None
+    reasoning_tokens = usage.reasoning_tokens if usage else None
 
     output_input_ratio = None
     if input_tokens is not None and input_tokens != 0 and output_tokens is not None:
@@ -28,6 +29,8 @@ def candidate_metrics(
         output_tokens is not None
         and result.decode_time_ms is not None
         and result.decode_time_ms > 0
+        and result.content_chunk_count > 1
+        and reasoning_tokens in (None, 0)
     ):
         decode_tokens_per_second = output_tokens / (result.decode_time_ms / 1000)
 
@@ -47,6 +50,7 @@ def candidate_metrics(
         input_tokens=input_tokens,
         output_tokens=output_tokens,
         total_tokens=total_tokens,
+        reasoning_tokens=reasoning_tokens,
         latency_ms=result.latency_ms,
         time_to_first_token_ms=result.time_to_first_token_ms,
         decode_time_ms=result.decode_time_ms,

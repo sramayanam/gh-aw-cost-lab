@@ -117,9 +117,17 @@ class ComparisonService:
             result = await provider.send(
                 ResponsesRequest(
                     model=f"{name}/{model}",
-                    input=request.prompt,
+                    input=(
+                        f"{request.qwen_prompt_prefix}{request.prompt}"
+                        if name == "qwen" and request.qwen_prompt_prefix
+                        else request.prompt
+                    ),
+                    instructions=request.instructions,
                     max_output_tokens=request.max_output_tokens,
                     temperature=request.temperature,
+                    chat_template_kwargs=(
+                        request.qwen_chat_template_kwargs if name == "qwen" else None
+                    ),
                 ),
                 model,
             )

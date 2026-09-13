@@ -17,6 +17,7 @@ async def test_provider_normalizes_usage_and_output_text() -> None:
         payload = json.loads(request.content)
         assert payload["stream"] is True
         assert payload["stream_options"] == {"include_usage": True}
+        assert payload["chat_template_kwargs"] == {"enable_thinking": False}
         return httpx.Response(
             200,
             text=(
@@ -39,7 +40,11 @@ async def test_provider_normalizes_usage_and_output_text() -> None:
             client=client,
         )
         result = await provider.send(
-            ResponsesRequest(model="qwen/test", input="hi"),
+            ResponsesRequest(
+                model="qwen/test",
+                input="hi",
+                chat_template_kwargs={"enable_thinking": False},
+            ),
             "test",
         )
 

@@ -17,12 +17,14 @@ class StubProvider:
     def __init__(self, name: str, *, fail: bool = False) -> None:
         self.name = name
         self.fail = fail
+        self.request: ResponsesRequest | None = None
 
     async def send(
         self,
         request: ResponsesRequest,
         upstream_model: str,
     ) -> ProviderResult:
+        self.request = request
         if self.fail:
             raise ProviderError(self.name, f"{self.name} failed")
         return ProviderResult(
@@ -73,14 +75,18 @@ class StubJudge:
 
 @pytest.mark.asyncio
 async def test_comparison_scores_both_candidates() -> None:
+    qwen = StubProvider("qwen")
+    azure = StubProvider("azure")
     service = ComparisonService(
         settings=Settings(_env_file=None, AZURE_OPENAI_DEPLOYMENT="azure-model"),
-        qwen=StubProvider("qwen"),
-        azure=StubProvider("azure"),
+        qwen=qwen,
+        azure=azure,
         judge=StubJudge(),
     )
 
-    result = await service.compare(ComparisonRequest(prompt="test"))
+    result = await service.compare(
+        ComparisonRequest(prompt="test", instructions="shared instruction")
+    )
 
     assert result.judge is not None
     assert result.judge_error is None
@@ -88,6 +94,38 @@ async def test_comparison_scores_both_candidates() -> None:
     assert result.candidates["qwen"].metrics.quality_score == 4
     assert result.candidates["azure"].metrics is not None
     assert result.candidates["azure"].metrics.quality_score == 4
+    assert qwen.request is not None
+    assert azure.request is not None
+    assert qwen.request.instructions == azure.request.instructions
+    assert qwen.request.max_output_tokens == azure.request.max_output_tokens
+    assert qwen.request.temperature == azure.request.temperature
+
+
+@pytest.mark.asyncio
+async def test_comparison_applies_chat_template_options_only_to_qwen() -> None:
+    qwen = StubProvider("qwen")
+    azure = StubProvider("azure")
+    service = ComparisonService(
+        settings=Settings(_env_file=None, AZURE_OPENAI_DEPLOYMENT="azure-model"),
+        qwen=qwen,
+        azure=azure,
+        judge=StubJudge(),
+    )
+
+    await service.compare(
+        ComparisonRequest(
+            prompt="test",
+            qwen_chat_template_kwargs={"enable_thinking": False},
+            qwen_prompt_prefix="/no_think\n",
+        )
+    )
+
+    assert qwen.request is not None
+    assert azure.request is not None
+    assert qwen.request.chat_template_kwargs == {"enable_thinking": False}
+    assert azure.request.chat_template_kwargs is None
+    assert qwen.request.input == "/no_think\ntest"
+    assert azure.request.input == "test"
 
 
 @pytest.mark.asyncio
