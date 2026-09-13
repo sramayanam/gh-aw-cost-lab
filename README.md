@@ -37,14 +37,21 @@ gh aw doctor --repo sramayanam/gh-aw-cost-lab
    gh aw compile
    ```
 
-4. Preview or run the weekly digest workflow:
+4. Validate and lint the generated workflows:
+
+   ```bash
+   gh aw validate
+   gh aw lint
+   ```
+
+5. Preview or run the weekly digest workflow:
 
    ```bash
    gh aw run cost-lab-digest --dry-run
    gh aw run cost-lab-digest
    ```
 
-5. Preview issue triage against an issue context. The `issue-triage` workflow is
+6. Preview issue triage against an issue context. The `issue-triage` workflow is
    normally triggered when an issue is opened or reopened, so use trial mode for
    a safe preview:
 
@@ -55,7 +62,7 @@ gh aw doctor --repo sramayanam/gh-aw-cost-lab
      --dry-run -y
    ```
 
-6. Inspect recent logs and AI-credit usage without writing artifacts into the
+7. Inspect recent logs and AI-credit usage without writing artifacts into the
    repository:
 
    ```bash
@@ -65,7 +72,7 @@ gh aw doctor --repo sramayanam/gh-aw-cost-lab
    gh aw audit <run-id-or-url> --output /tmp/gh-aw-cost-lab-audit
    ```
 
-7. View safe-output outcomes for a completed run:
+8. View safe-output outcomes for a completed run:
 
    ```bash
    gh aw outcomes <run-id> --repo sramayanam/gh-aw-cost-lab
