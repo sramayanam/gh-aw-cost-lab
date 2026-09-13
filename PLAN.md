@@ -5,8 +5,8 @@
 Build a small Python 3.11 FastAPI application that compares the same prompt
 across:
 
-1. A locally hosted Qwen endpoint implementing OpenAI-compatible
-   `POST /v1/responses`.
+1. A locally hosted Foundry Local Qwen endpoint implementing OpenAI-compatible
+   `POST /v1/chat/completions`.
 2. An Azure OpenAI endpoint.
 
 The application will expose an OpenAI-compatible routing endpoint and a
@@ -24,7 +24,8 @@ implementation must not begin until this plan is approved.
 - Persistence: Append-only JSONL in a local `data/` directory.
 - Judge: Azure OpenAI returns structured quality scores.
 - Default privacy: Persist prompt/response hashes and metrics, not content.
-- Scope: Non-streaming text responses only in v1.
+- Scope: Non-streaming public text responses in v1. Provider adapters use
+  streaming internally to capture time to first token and decode throughput.
 
 ## Proposed Structure
 
@@ -38,8 +39,7 @@ src/model_router/
   storage.py
   providers/
     base.py
-    openai_responses.py
-    azure_openai.py
+    openai_chat_completions.py
   judging/
     azure_judge.py
   templates/
@@ -60,13 +60,15 @@ pyproject.toml
 ### `POST /v1/responses`
 
 Accept the supported, non-streaming subset of the OpenAI Responses request.
-Route one request according to a configured model alias:
+Translate it into Chat Completions messages, then route one request according
+to a configured model alias:
 
 - `qwen/<model>` routes to the local OpenAI-compatible endpoint.
 - `azure/<deployment>` routes to Azure OpenAI.
 
-Return the provider response in OpenAI Responses-compatible form and record
-metrics without changing the response body.
+Consume the upstream streaming response, normalize it into an OpenAI
+Responses-compatible result, and record metrics. Client-facing streaming is
+outside v1.
 
 ### `POST /api/comparisons`
 
@@ -97,8 +99,11 @@ values or making paid model calls.
 For each candidate response, record:
 
 - `input_tokens`, `output_tokens`, and `total_tokens` from provider usage.
-- Wall-clock latency in milliseconds.
-- Output tokens per second.
+- End-to-end wall-clock latency in milliseconds.
+- Time to first token in milliseconds.
+- Decode duration in milliseconds.
+- Decode throughput: completion tokens divided by decode duration.
+- End-to-end throughput: completion tokens divided by total latency.
 - Output/input token ratio; report undefined when input tokens are zero.
 - Tokens per successful request.
 - Azure judge score on a documented 1-5 rubric.
@@ -121,7 +126,6 @@ Document environment variables in `.env.example` without real values:
 - `QWEN_HOURLY_COST_USD`
 - `AZURE_OPENAI_ENDPOINT`
 - `AZURE_OPENAI_API_KEY`
-- `AZURE_OPENAI_API_VERSION`
 - `AZURE_OPENAI_DEPLOYMENT`
 - `AZURE_OPENAI_JUDGE_DEPLOYMENT`
 - `AZURE_INPUT_COST_PER_MILLION`
@@ -132,6 +136,10 @@ Document environment variables in `.env.example` without real values:
 
 Configuration errors must identify missing variable names without exposing
 other configuration or secret values.
+
+Azure authentication uses `AZURE_OPENAI_API_KEY` when configured. Otherwise,
+it uses `DefaultAzureCredential`, which supports Azure CLI login during local
+development and managed identity in Azure.
 
 ## Tasks
 
@@ -147,8 +155,13 @@ other configuration or secret values.
 ### 2. Implement typed provider adapters
 
 - Define a provider protocol and normalized response/usage models.
-- Implement the local Qwen Responses adapter.
-- Implement the Azure OpenAI Responses adapter.
+- Implement streaming Chat Completions adapters for local Qwen and Azure
+  OpenAI.
+- Request `stream_options.include_usage=true` and read usage from the final
+  stream chunk.
+- Add Foundry Local model discovery through `GET /v1/models`.
+- Normalize upstream chunks into a Responses-compatible result without
+  estimating missing token usage.
 - Preserve upstream status and diagnostic details without exposing secrets.
 - Add unit tests using `httpx.MockTransport`.
 - Commit adapters and tests together.

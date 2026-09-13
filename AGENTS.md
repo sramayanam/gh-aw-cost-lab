@@ -66,7 +66,10 @@ gh aw validate
 - **Judge tokens:** Tokens consumed by Azure OpenAI to score response quality.
   Track them separately and exclude them from candidate token efficiency.
 - **Token efficiency:** Report output/input ratio, successful-request tokens,
-  quality score per total candidate token, and tokens per second.
+  quality score per total candidate token, end-to-end throughput, and decode
+  throughput.
+- **Decode throughput:** Provider completion tokens divided by the time from
+  the first content token until the stream completes.
 - **Managed cost:** Estimate from configured hourly hosting cost multiplied by
   request duration. State that this is an allocation estimate.
 - **Commercial cost:** Estimate from configured input/output token prices.
@@ -100,6 +103,7 @@ gh aw validate
 
 - Do not hardcode endpoint URLs, deployments, prices, or credentials.
 - Do not silently substitute fake token counts or quality scores.
+- Do not estimate token usage when provider usage is missing in benchmark mode.
 - Do not mix judge usage into candidate efficiency calculations.
 - Do not add a database, frontend build system, or routing framework in v1.
 - Do not auto-merge agent-created pull requests.

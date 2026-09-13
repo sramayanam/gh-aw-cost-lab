@@ -9,12 +9,19 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
+        env_ignore_empty=True,
         extra="ignore",
     )
 
-    qwen_base_url: str | None = Field(default=None, alias="QWEN_BASE_URL")
+    qwen_base_url: str | None = Field(
+        default="http://127.0.0.1:49508/v1",
+        alias="QWEN_BASE_URL",
+    )
     qwen_api_key: SecretStr | None = Field(default=None, alias="QWEN_API_KEY")
-    qwen_model: str = Field(default="qwen", alias="QWEN_MODEL")
+    qwen_model: str = Field(
+        default="qwen3.5-4b-generic-gpu",
+        alias="QWEN_MODEL",
+    )
     qwen_hourly_cost_usd: float = Field(
         default=0,
         ge=0,
@@ -28,10 +35,6 @@ class Settings(BaseSettings):
     azure_openai_api_key: SecretStr | None = Field(
         default=None,
         alias="AZURE_OPENAI_API_KEY",
-    )
-    azure_openai_api_version: str = Field(
-        default="2025-04-01-preview",
-        alias="AZURE_OPENAI_API_VERSION",
     )
     azure_openai_deployment: str | None = Field(
         default=None,
@@ -61,6 +64,11 @@ class Settings(BaseSettings):
         default=None,
         alias="ROUTER_API_KEY",
     )
+    router_request_timeout_seconds: float = Field(
+        default=120,
+        gt=0,
+        alias="ROUTER_REQUEST_TIMEOUT_SECONDS",
+    )
 
     @property
     def qwen_ready(self) -> bool:
@@ -71,7 +79,6 @@ class Settings(BaseSettings):
         return all(
             (
                 self.azure_openai_endpoint,
-                self.azure_openai_api_key,
                 self.azure_openai_deployment,
             )
         )
