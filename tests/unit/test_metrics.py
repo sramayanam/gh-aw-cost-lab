@@ -30,6 +30,9 @@ def test_commercial_metrics() -> None:
     assert metrics.end_to_end_tokens_per_second == 25
     assert metrics.decode_tokens_per_second == 50
     assert metrics.time_to_first_token_ms == 500
+    assert metrics.output_characters == 6
+    assert metrics.output_words == 1
+    assert metrics.characters_per_output_token == pytest.approx(0.12)
     assert metrics.estimated_cost_usd == pytest.approx(0.0006)
     assert metrics.quality_per_1000_tokens == pytest.approx(26.6666667)
 

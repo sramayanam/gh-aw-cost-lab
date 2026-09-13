@@ -187,6 +187,8 @@ def _chat_payload(
         payload["max_tokens"] = request.max_output_tokens
     if request.temperature is not None:
         payload["temperature"] = request.temperature
+    if request.stop is not None:
+        payload["stop"] = request.stop
     if request.chat_template_kwargs is not None:
         payload["chat_template_kwargs"] = request.chat_template_kwargs
     return payload

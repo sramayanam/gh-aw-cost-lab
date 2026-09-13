@@ -13,6 +13,7 @@ class ResponsesRequest(BaseModel):
     instructions: str | None = None
     max_output_tokens: int | None = Field(default=None, gt=0)
     temperature: float | None = None
+    stop: str | list[str] | None = None
     chat_template_kwargs: dict[str, Any] | None = None
 
 
@@ -42,6 +43,9 @@ class CandidateMetrics(BaseModel):
     output_tokens: int | None
     total_tokens: int | None
     reasoning_tokens: int | None
+    output_characters: int
+    output_words: int
+    characters_per_output_token: float | None
     latency_ms: float
     time_to_first_token_ms: float | None
     decode_time_ms: float | None
@@ -62,6 +66,7 @@ class ComparisonRequest(BaseModel):
     azure_model: str | None = None
     max_output_tokens: int = Field(default=256, gt=0, le=4096)
     temperature: float = Field(default=0, ge=0, le=2)
+    stop: str | list[str] | None = None
     qwen_chat_template_kwargs: dict[str, Any] | None = None
     qwen_prompt_prefix: str | None = None
 

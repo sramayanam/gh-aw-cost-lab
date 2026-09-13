@@ -15,6 +15,11 @@ def candidate_metrics(
     output_tokens = usage.output_tokens if usage else None
     total_tokens = usage.total_tokens if usage else None
     reasoning_tokens = usage.reasoning_tokens if usage else None
+    output_characters = len(result.output_text)
+    output_words = len(result.output_text.split())
+    characters_per_output_token = None
+    if output_tokens is not None and output_tokens > 0:
+        characters_per_output_token = output_characters / output_tokens
 
     output_input_ratio = None
     if input_tokens is not None and input_tokens != 0 and output_tokens is not None:
@@ -51,6 +56,9 @@ def candidate_metrics(
         output_tokens=output_tokens,
         total_tokens=total_tokens,
         reasoning_tokens=reasoning_tokens,
+        output_characters=output_characters,
+        output_words=output_words,
+        characters_per_output_token=characters_per_output_token,
         latency_ms=result.latency_ms,
         time_to_first_token_ms=result.time_to_first_token_ms,
         decode_time_ms=result.decode_time_ms,

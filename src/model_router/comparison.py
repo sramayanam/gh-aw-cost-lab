@@ -125,6 +125,7 @@ class ComparisonService:
                     instructions=request.instructions,
                     max_output_tokens=request.max_output_tokens,
                     temperature=request.temperature,
+                    stop=request.stop,
                     chat_template_kwargs=(
                         request.qwen_chat_template_kwargs if name == "qwen" else None
                     ),

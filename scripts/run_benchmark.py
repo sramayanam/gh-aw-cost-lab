@@ -71,6 +71,7 @@ class BenchmarkProfile(TypedDict):
     description: str
     max_output_tokens: int
     temperature: float
+    stop: str | list[str] | None
     instructions: str | None
     qwen_chat_template_kwargs: dict[str, Any] | None
     qwen_prompt_prefix: str | None
@@ -83,6 +84,7 @@ PROFILES: dict[str, BenchmarkProfile] = {
         ),
         "max_output_tokens": 1000,
         "temperature": 0,
+        "stop": None,
         "instructions": None,
         "qwen_chat_template_kwargs": None,
         "qwen_prompt_prefix": None,
@@ -94,6 +96,7 @@ PROFILES: dict[str, BenchmarkProfile] = {
         ),
         "max_output_tokens": 256,
         "temperature": 0,
+        "stop": None,
         "instructions": (
             "/no_think\n"
             "Return only the final answer; do not expose analysis or chain of "
@@ -113,6 +116,7 @@ PROFILES: dict[str, BenchmarkProfile] = {
         ),
         "max_output_tokens": 256,
         "temperature": 0,
+        "stop": None,
         "instructions": (
             "Return only the final answer; do not expose analysis or chain of "
             "thought. Follow every requested format and length constraint. Be "
@@ -123,6 +127,24 @@ PROFILES: dict[str, BenchmarkProfile] = {
         ),
         "qwen_chat_template_kwargs": {"enable_thinking": False},
         "qwen_prompt_prefix": "/no_think\n",
+    },
+    "matched-stop": {
+        "description": (
+            "Identical prompts and sampling settings with an explicit final-answer "
+            "delimiter and matched stop sequence for both providers."
+        ),
+        "max_output_tokens": 1000,
+        "temperature": 0,
+        "stop": "</final>",
+        "instructions": (
+            "Return only the concise final answer inside <final> and </final>. "
+            "Do not expose analysis or chain of thought and do not write anything "
+            "outside those tags.\n"
+            "Example request: What is 2 + 2?\n"
+            "Example response: <final>4</final>"
+        ),
+        "qwen_chat_template_kwargs": None,
+        "qwen_prompt_prefix": None,
     },
 }
 
@@ -162,6 +184,7 @@ async def run(profile_name: str) -> None:
                             evaluation_criteria=case["criteria"],
                             max_output_tokens=profile["max_output_tokens"],
                             temperature=profile["temperature"],
+                            stop=profile["stop"],
                             qwen_chat_template_kwargs=profile[
                                 "qwen_chat_template_kwargs"
                             ],
@@ -224,7 +247,7 @@ def _report(
         "sampling": {
             "max_output_tokens": profile["max_output_tokens"],
             "temperature": profile["temperature"],
-            "stop_sequences": [],
+            "stop_sequences": profile["stop"],
             "shared_instructions": profile["instructions"] is not None,
             "qwen_chat_template_kwargs": profile["qwen_chat_template_kwargs"],
             "prompts_identical": profile["qwen_prompt_prefix"] is None,
@@ -250,6 +273,18 @@ def _aggregate(results: list[ComparisonResult]) -> dict[str, Any]:
             ),
             "total_candidate_tokens": sum(
                 item.total_tokens or 0 for item in metrics if item is not None
+            ),
+            "total_input_tokens": sum(
+                item.input_tokens or 0 for item in metrics if item is not None
+            ),
+            "total_output_tokens": sum(
+                item.output_tokens or 0 for item in metrics if item is not None
+            ),
+            "total_output_characters": sum(
+                item.output_characters for item in metrics if item is not None
+            ),
+            "total_output_words": sum(
+                item.output_words for item in metrics if item is not None
             ),
             "average_quality_score": _average(
                 item.quality_score for item in metrics if item is not None
@@ -319,6 +354,8 @@ def _print_summary(report: dict[str, Any]) -> None:
         print(
             f"{provider}: quality={_number(metrics['average_quality_score'])}, "
             f"tokens={metrics['total_candidate_tokens']}, "
+            f"chars={metrics['total_output_characters']}, "
+            f"words={metrics['total_output_words']}, "
             f"length_limited={metrics['length_limited_cases']}, "
             f"latency_ms={_number(metrics['average_latency_ms'])}, "
             f"ttft_ms={_number(metrics['average_ttft_ms'])}, "

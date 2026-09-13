@@ -85,7 +85,11 @@ async def test_comparison_scores_both_candidates() -> None:
     )
 
     result = await service.compare(
-        ComparisonRequest(prompt="test", instructions="shared instruction")
+        ComparisonRequest(
+            prompt="test",
+            instructions="shared instruction",
+            stop="</final>",
+        )
     )
 
     assert result.judge is not None
@@ -99,6 +103,7 @@ async def test_comparison_scores_both_candidates() -> None:
     assert qwen.request.instructions == azure.request.instructions
     assert qwen.request.max_output_tokens == azure.request.max_output_tokens
     assert qwen.request.temperature == azure.request.temperature
+    assert qwen.request.stop == azure.request.stop
 
 
 @pytest.mark.asyncio
