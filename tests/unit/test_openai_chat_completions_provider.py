@@ -21,7 +21,8 @@ async def test_provider_normalizes_usage_and_output_text() -> None:
             200,
             text=(
                 'data: {"id":"chat_1","choices":[{"delta":{"content":"hel"}}]}\n\n'
-                'data: {"id":"chat_1","choices":[{"delta":{"content":"lo"}}]}\n\n'
+                'data: {"id":"chat_1","choices":[{"delta":{"content":"lo"},'
+                '"finish_reason":"stop"}]}\n\n'
                 'data: {"choices":[],"usage":{"prompt_tokens":4,'
                 '"completion_tokens":2,"total_tokens":6}}\n\n'
                 "data: [DONE]\n\n"
@@ -47,6 +48,7 @@ async def test_provider_normalizes_usage_and_output_text() -> None:
     assert result.usage.total_tokens == 6
     assert result.time_to_first_token_ms is not None
     assert result.decode_time_ms is not None
+    assert result.finish_reason == "stop"
     assert result.response["output_text"] == "hello"
 
 

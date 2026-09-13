@@ -1,3 +1,4 @@
+from hashlib import sha256
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -30,6 +31,7 @@ class ProviderResult(BaseModel):
     latency_ms: float = Field(ge=0)
     time_to_first_token_ms: float | None = Field(default=None, ge=0)
     decode_time_ms: float | None = Field(default=None, ge=0)
+    finish_reason: str | None = None
 
 
 class CandidateMetrics(BaseModel):
@@ -46,3 +48,49 @@ class CandidateMetrics(BaseModel):
     estimated_cost_usd: float | None
     quality_score: float | None = None
     quality_per_1000_tokens: float | None = None
+
+
+class ComparisonRequest(BaseModel):
+    prompt: str = Field(min_length=1)
+    evaluation_criteria: str | None = None
+    qwen_model: str | None = None
+    azure_model: str | None = None
+    max_output_tokens: int = Field(default=256, gt=0, le=4096)
+    temperature: float = Field(default=0, ge=0, le=2)
+
+    @property
+    def prompt_hash(self) -> str:
+        return sha256(self.prompt.encode()).hexdigest()
+
+
+class QualityAssessment(BaseModel):
+    correctness: int = Field(ge=1, le=5)
+    relevance: int = Field(ge=1, le=5)
+    completeness: int = Field(ge=1, le=5)
+    rationale: str
+
+    @property
+    def score(self) -> float:
+        return (self.correctness + self.relevance + self.completeness) / 3
+
+
+class JudgeResult(BaseModel):
+    assessments: dict[str, QualityAssessment]
+    usage: ProviderUsage | None
+    latency_ms: float = Field(ge=0)
+    rubric: str
+
+
+class CandidateOutcome(BaseModel):
+    provider: str
+    model: str
+    result: ProviderResult | None = None
+    metrics: CandidateMetrics | None = None
+    error: str | None = None
+
+
+class ComparisonResult(BaseModel):
+    prompt_hash: str
+    candidates: dict[str, CandidateOutcome]
+    judge: JudgeResult | None = None
+    judge_error: str | None = None

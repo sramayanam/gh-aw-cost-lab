@@ -45,6 +45,7 @@ class OpenAIChatCompletionsProvider:
         chunks: list[str] = []
         usage: ProviderUsage | None = None
         response_id: str | None = None
+        finish_reason: str | None = None
         try:
             async with self._client.stream(
                 "POST",
@@ -70,6 +71,7 @@ class OpenAIChatCompletionsProvider:
                     if isinstance(chunk_id, str):
                         response_id = chunk_id
                     usage = _extract_usage(chunk) or usage
+                    finish_reason = _extract_finish_reason(chunk) or finish_reason
                     delta = _extract_delta(chunk)
                     if delta:
                         if first_token_at is None:
@@ -103,6 +105,7 @@ class OpenAIChatCompletionsProvider:
                 if first_token_at is not None
                 else None
             ),
+            finish_reason=finish_reason,
         )
 
     async def list_models(self) -> list[str]:
@@ -208,6 +211,17 @@ def _extract_delta(chunk: dict[str, Any]) -> str:
         return ""
     content = delta.get("content")
     return content if isinstance(content, str) else ""
+
+
+def _extract_finish_reason(chunk: dict[str, Any]) -> str | None:
+    choices = chunk.get("choices")
+    if not isinstance(choices, list) or not choices:
+        return None
+    choice = choices[0]
+    if not isinstance(choice, dict):
+        return None
+    finish_reason = choice.get("finish_reason")
+    return finish_reason if isinstance(finish_reason, str) else None
 
 
 def _extract_usage(body: dict[str, Any]) -> ProviderUsage | None:
