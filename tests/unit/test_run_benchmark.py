@@ -1,4 +1,5 @@
 import importlib.util
+import json
 from pathlib import Path
 
 import pytest
@@ -9,9 +10,59 @@ from model_router.models import (
     CandidateOutcome,
     ComparisonResult,
     JudgeResult,
+    ProviderResult,
     ProviderUsage,
     QualityAssessment,
+    ResponsesRequest,
 )
+
+
+class FakeProvider:
+    def __init__(self, provider: str) -> None:
+        self.provider = provider
+        self.upstream_models: list[str] = []
+
+    async def send(
+        self,
+        request: ResponsesRequest,
+        upstream_model: str,
+    ) -> ProviderResult:
+        self.upstream_models.append(upstream_model)
+        output_text = f"{self.provider} answer"
+        if request.model == "azure/gpt-5.4":
+            output_text = """
+            {
+              "candidate_a": {
+                "correctness": 4,
+                "relevance": 4,
+                "completeness": 4,
+                "rationale": "Good."
+              },
+              "candidate_b": {
+                "correctness": 5,
+                "relevance": 5,
+                "completeness": 5,
+                "rationale": "Great."
+              }
+            }
+            """
+        return ProviderResult(
+            provider=self.provider,
+            model=upstream_model,
+            response={},
+            output_text=output_text,
+            usage=ProviderUsage(input_tokens=10, output_tokens=5, total_tokens=15),
+            latency_ms=100,
+            time_to_first_token_ms=20,
+            decode_time_ms=50,
+        )
+
+    async def list_models(self) -> list[str]:
+        return []
+
+    async def aclose(self) -> None:
+        return None
+
 
 _RUN_BENCHMARK_PATH = Path(__file__).parents[2] / "scripts" / "run_benchmark.py"
 _SPEC = importlib.util.spec_from_file_location("run_benchmark", _RUN_BENCHMARK_PATH)
@@ -49,6 +100,30 @@ def test_configured_judge_deployment_rejects_blank_value() -> None:
         match="Missing required configuration: AZURE_OPENAI_JUDGE_DEPLOYMENT",
     ):
         run_benchmark._configured_judge_deployment(settings)
+
+
+@pytest.mark.asyncio
+async def test_run_uses_configured_judge_deployment(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    qwen = FakeProvider("qwen")
+    azure = FakeProvider("azure")
+    settings = Settings(
+        _env_file=None,
+        AZURE_OPENAI_DEPLOYMENT="gpt-4.1-mini",
+        AZURE_OPENAI_JUDGE_DEPLOYMENT=" gpt-5.4 ",
+        ROUTER_DATA_DIR=tmp_path,
+    )
+    monkeypatch.setattr(run_benchmark, "Settings", lambda: settings)
+    monkeypatch.setattr(run_benchmark, "create_qwen_provider", lambda *_: qwen)
+    monkeypatch.setattr(run_benchmark, "create_azure_provider", lambda *_: azure)
+
+    await run_benchmark.run("baseline")
+
+    report = json.loads((tmp_path / "benchmark-baseline.json").read_text())
+    assert "gpt-5.4" in azure.upstream_models
+    assert report["sampling"]["judge_deployment"] == "gpt-5.4"
 
 
 def _result() -> ComparisonResult:
