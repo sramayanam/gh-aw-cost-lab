@@ -151,10 +151,7 @@ PROFILES: dict[str, BenchmarkProfile] = {
 
 async def run(profile_name: str) -> None:
     settings = Settings()
-    if settings.azure_openai_judge_deployment is None:
-        raise RuntimeError(
-            "Missing required configuration: AZURE_OPENAI_JUDGE_DEPLOYMENT"
-        )
+    judge_deployment = settings.required_azure_openai_judge_deployment
 
     async with httpx.AsyncClient(
         timeout=settings.router_request_timeout_seconds
@@ -163,7 +160,7 @@ async def run(profile_name: str) -> None:
         azure = create_azure_provider(settings, client)
         judge = AzureJudge(
             provider=azure,
-            deployment=settings.azure_openai_judge_deployment,
+            deployment=judge_deployment,
         )
         service = ComparisonService(
             settings=settings,
@@ -196,7 +193,12 @@ async def run(profile_name: str) -> None:
             await qwen.aclose()
             await azure.aclose()
 
-    report = _report(results, profile_name, profile)
+    report = _report(
+        results,
+        profile_name,
+        profile,
+        judge_deployment=judge_deployment,
+    )
     destination = settings.router_data_dir / f"benchmark-{profile_name}.json"
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
@@ -210,6 +212,8 @@ def _report(
     results: list[ComparisonResult],
     profile_name: str,
     profile: BenchmarkProfile,
+    *,
+    judge_deployment: str,
 ) -> dict[str, Any]:
     rows = []
     for case, result in zip(CASES, results, strict=True):
@@ -252,6 +256,7 @@ def _report(
             "qwen_chat_template_kwargs": profile["qwen_chat_template_kwargs"],
             "prompts_identical": profile["qwen_prompt_prefix"] is None,
             "qwen_prompt_prefix": profile["qwen_prompt_prefix"],
+            "judge_deployment": judge_deployment,
         },
         "aggregate": _aggregate(results),
         "cases": rows,

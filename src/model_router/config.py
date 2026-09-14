@@ -87,6 +87,15 @@ class Settings(BaseSettings):
     def judge_ready(self) -> bool:
         return self.azure_ready and self.azure_openai_judge_deployment is not None
 
+    @property
+    def required_azure_openai_judge_deployment(self) -> str:
+        deployment = (self.azure_openai_judge_deployment or "").strip()
+        if not deployment:
+            raise RuntimeError(
+                "Missing required configuration: AZURE_OPENAI_JUDGE_DEPLOYMENT"
+            )
+        return deployment
+
 
 @lru_cache
 def get_settings() -> Settings:
