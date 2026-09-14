@@ -126,6 +126,26 @@ async def test_run_uses_configured_judge_deployment(
     assert report["sampling"]["judge_deployment"] == "gpt-5.4"
 
 
+@pytest.mark.asyncio
+async def test_run_rejects_blank_judge_deployment(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = Settings(
+        _env_file=None,
+        AZURE_OPENAI_DEPLOYMENT="gpt-4.1-mini",
+        AZURE_OPENAI_JUDGE_DEPLOYMENT=" ",
+        ROUTER_DATA_DIR=tmp_path,
+    )
+    monkeypatch.setattr(run_benchmark, "Settings", lambda: settings)
+
+    with pytest.raises(
+        RuntimeError,
+        match="Missing required configuration: AZURE_OPENAI_JUDGE_DEPLOYMENT",
+    ):
+        await run_benchmark.run("baseline")
+
+
 def _result() -> ComparisonResult:
     return ComparisonResult(
         prompt_hash="hash",
