@@ -228,6 +228,19 @@ provider-specific tuning:
 jq '.sampling, .aggregate' data/benchmark-qwen-no-thinking.json
 ```
 
+### Airlines MCP tool-call smoke test
+
+To exercise real-world tool calls against the airlines PostgreSQL MCP server,
+run the manual agentic workflow:
+
+```bash
+gh aw run airlines-mcp-smoke
+```
+
+The workflow uses the configured airlines MCP server and reports tool-call
+success counts, observable latency, row counts, and sample facts without running
+mutating database operations.
+
 ## 8. Expected Baseline Talking Points
 
 The current controlled baseline produced:
