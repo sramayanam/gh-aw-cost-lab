@@ -151,12 +151,11 @@ PROFILES: dict[str, BenchmarkProfile] = {
 
 async def run(profile_name: str) -> None:
     settings = Settings()
-    judge_deployment = settings.azure_openai_judge_deployment
-    if judge_deployment is None or not judge_deployment.strip():
+    judge_deployment = (settings.azure_openai_judge_deployment or "").strip()
+    if not judge_deployment:
         raise RuntimeError(
             "Missing required configuration: AZURE_OPENAI_JUDGE_DEPLOYMENT"
         )
-    judge_deployment = judge_deployment.strip()
 
     async with httpx.AsyncClient(
         timeout=settings.router_request_timeout_seconds
