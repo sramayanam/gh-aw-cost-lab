@@ -1,6 +1,9 @@
 import importlib.util
 from pathlib import Path
 
+import pytest
+
+from model_router.config import Settings
 from model_router.models import (
     CandidateMetrics,
     CandidateOutcome,
@@ -27,6 +30,25 @@ def test_benchmark_report_records_judge_deployment() -> None:
     )
 
     assert report["sampling"]["judge_deployment"] == "gpt-5.4"
+
+
+def test_configured_judge_deployment_strips_whitespace() -> None:
+    settings = Settings(
+        _env_file=None,
+        AZURE_OPENAI_JUDGE_DEPLOYMENT=" gpt-5.4 ",
+    )
+
+    assert run_benchmark._configured_judge_deployment(settings) == "gpt-5.4"
+
+
+def test_configured_judge_deployment_rejects_blank_value() -> None:
+    settings = Settings(_env_file=None, AZURE_OPENAI_JUDGE_DEPLOYMENT=" ")
+
+    with pytest.raises(
+        RuntimeError,
+        match="Missing required configuration: AZURE_OPENAI_JUDGE_DEPLOYMENT",
+    ):
+        run_benchmark._configured_judge_deployment(settings)
 
 
 def _result() -> ComparisonResult:
