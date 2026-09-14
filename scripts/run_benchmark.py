@@ -151,10 +151,12 @@ PROFILES: dict[str, BenchmarkProfile] = {
 
 async def run(profile_name: str) -> None:
     settings = Settings()
-    if settings.azure_openai_judge_deployment is None:
+    judge_deployment = settings.azure_openai_judge_deployment
+    if judge_deployment is None or not judge_deployment.strip():
         raise RuntimeError(
             "Missing required configuration: AZURE_OPENAI_JUDGE_DEPLOYMENT"
         )
+    judge_deployment = judge_deployment.strip()
 
     async with httpx.AsyncClient(
         timeout=settings.router_request_timeout_seconds
@@ -163,7 +165,7 @@ async def run(profile_name: str) -> None:
         azure = create_azure_provider(settings, client)
         judge = AzureJudge(
             provider=azure,
-            deployment=settings.azure_openai_judge_deployment,
+            deployment=judge_deployment,
         )
         service = ComparisonService(
             settings=settings,
@@ -200,7 +202,7 @@ async def run(profile_name: str) -> None:
         results,
         profile_name,
         profile,
-        judge_deployment=settings.azure_openai_judge_deployment,
+        judge_deployment=judge_deployment,
     )
     destination = settings.router_data_dir / f"benchmark-{profile_name}.json"
     destination.parent.mkdir(parents=True, exist_ok=True)

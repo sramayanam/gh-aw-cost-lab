@@ -130,11 +130,14 @@ Expected deployment:
 gpt-4.1-mini
 ```
 
-Expected judge deployment:
+Expected judge deployment name:
 
 ```text
 gpt-5.4
 ```
+
+If your Azure deployment uses a different deployment name for GPT-5.4, set
+`AZURE_OPENAI_JUDGE_DEPLOYMENT` to that name instead.
 
 ## 5. Run Local Validation
 
@@ -373,8 +376,9 @@ Git.
 
 - The benchmark contains five synthetic cases; it is directional, not a
   production forecast.
-- Azure `gpt-4.1-mini` is the commercial candidate and Azure `gpt-5.4` is the
-  blinded judge, so residual model-family bias is possible.
+- Azure `gpt-4.1-mini` is the commercial candidate and the configured
+  `gpt-5.4` deployment is the blinded judge, so residual model-family bias is
+  possible.
 - Tokenizers differ, which is why the report also compares words and
   characters.
 - Cost rates are currently zero in `.env`; the demo makes no dollar-savings
