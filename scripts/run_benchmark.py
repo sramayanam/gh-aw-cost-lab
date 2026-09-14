@@ -151,7 +151,7 @@ PROFILES: dict[str, BenchmarkProfile] = {
 
 async def run(profile_name: str) -> None:
     settings = Settings()
-    judge_deployment = _configured_judge_deployment(settings)
+    judge_deployment = settings.required_azure_openai_judge_deployment
 
     async with httpx.AsyncClient(
         timeout=settings.router_request_timeout_seconds
@@ -206,15 +206,6 @@ async def run(profile_name: str) -> None:
     latest.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     _print_summary(report)
     print(f"\nMetric-only report: {destination}")
-
-
-def _configured_judge_deployment(settings: Settings) -> str:
-    deployment = (settings.azure_openai_judge_deployment or "").strip()
-    if not deployment:
-        raise RuntimeError(
-            "Missing required configuration: AZURE_OPENAI_JUDGE_DEPLOYMENT"
-        )
-    return deployment
 
 
 def _report(

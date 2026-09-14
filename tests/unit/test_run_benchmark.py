@@ -89,7 +89,7 @@ def test_configured_judge_deployment_strips_whitespace() -> None:
         AZURE_OPENAI_JUDGE_DEPLOYMENT=" gpt-5.4 ",
     )
 
-    assert run_benchmark._configured_judge_deployment(settings) == "gpt-5.4"
+    assert settings.required_azure_openai_judge_deployment == "gpt-5.4"
 
 
 def test_configured_judge_deployment_rejects_blank_value() -> None:
@@ -99,7 +99,7 @@ def test_configured_judge_deployment_rejects_blank_value() -> None:
         RuntimeError,
         match="Missing required configuration: AZURE_OPENAI_JUDGE_DEPLOYMENT",
     ):
-        run_benchmark._configured_judge_deployment(settings)
+        _ = settings.required_azure_openai_judge_deployment
 
 
 @pytest.mark.asyncio
