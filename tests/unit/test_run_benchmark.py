@@ -1,0 +1,84 @@
+import importlib.util
+from pathlib import Path
+
+from model_router.models import (
+    CandidateMetrics,
+    CandidateOutcome,
+    ComparisonResult,
+    JudgeResult,
+    ProviderUsage,
+    QualityAssessment,
+)
+
+_RUN_BENCHMARK_PATH = Path(__file__).parents[2] / "scripts" / "run_benchmark.py"
+_SPEC = importlib.util.spec_from_file_location("run_benchmark", _RUN_BENCHMARK_PATH)
+assert _SPEC is not None
+run_benchmark = importlib.util.module_from_spec(_SPEC)
+assert _SPEC.loader is not None
+_SPEC.loader.exec_module(run_benchmark)
+
+
+def test_benchmark_report_records_judge_deployment() -> None:
+    report = run_benchmark._report(
+        [_result() for _ in run_benchmark.CASES],
+        "baseline",
+        run_benchmark.PROFILES["baseline"],
+        judge_deployment="gpt-5.4",
+    )
+
+    assert report["sampling"]["judge_deployment"] == "gpt-5.4"
+
+
+def _result() -> ComparisonResult:
+    return ComparisonResult(
+        prompt_hash="hash",
+        candidates={
+            "qwen": _outcome("qwen"),
+            "azure": _outcome("azure"),
+        },
+        judge=JudgeResult(
+            assessments={
+                "qwen": QualityAssessment(
+                    correctness=4,
+                    relevance=4,
+                    completeness=4,
+                    rationale="Good.",
+                ),
+                "azure": QualityAssessment(
+                    correctness=5,
+                    relevance=5,
+                    completeness=5,
+                    rationale="Great.",
+                ),
+            },
+            usage=ProviderUsage(input_tokens=10, output_tokens=5, total_tokens=15),
+            latency_ms=100,
+            rubric="rubric",
+        ),
+    )
+
+
+def _outcome(provider: str) -> CandidateOutcome:
+    return CandidateOutcome(
+        provider=provider,
+        model="model",
+        metrics=CandidateMetrics(
+            input_tokens=10,
+            output_tokens=5,
+            total_tokens=15,
+            reasoning_tokens=None,
+            output_characters=20,
+            output_words=4,
+            characters_per_output_token=4,
+            latency_ms=100,
+            time_to_first_token_ms=20,
+            decode_time_ms=50,
+            output_input_ratio=0.5,
+            end_to_end_tokens_per_second=50,
+            decode_tokens_per_second=100,
+            tokens_per_successful_request=15,
+            estimated_cost_usd=0,
+            quality_score=4,
+            quality_per_1000_tokens=266.67,
+        ),
+    )

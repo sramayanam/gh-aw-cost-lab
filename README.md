@@ -130,6 +130,12 @@ Expected deployment:
 gpt-4.1-mini
 ```
 
+Expected judge deployment:
+
+```text
+gpt-5.4
+```
+
 ## 5. Run Local Validation
 
 Run the unit tests and static checks before the meeting:
@@ -354,8 +360,8 @@ Git.
 
 - The benchmark contains five synthetic cases; it is directional, not a
   production forecast.
-- Azure `gpt-4.1-mini` is both the commercial candidate and the blinded judge,
-  so residual evaluator bias is possible.
+- Azure `gpt-4.1-mini` is the commercial candidate and Azure `gpt-5.4` is the
+  blinded judge, so residual model-family bias is possible.
 - Tokenizers differ, which is why the report also compares words and
   characters.
 - Cost rates are currently zero in `.env`; the demo makes no dollar-savings
